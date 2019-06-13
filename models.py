@@ -1,54 +1,58 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
-from sqlalchemy.orm import relationship
-from flask_appbuilder import Model
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 
+import os
 
-class GasStation(Model):
+basedir = os.path.abspath(os.path.dirname(__file__))
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'app.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+
+class GasStation(db.Model):
     __tablename__ = 'station'
-    id = Column(Integer, primary_key=True)
-    name = Column(String(50), nullable=False)
-    fuel_price = Column(Integer)
-    car_observers = relationship("Car", backref="station")
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    fuel_price = db.Column(db.Integer)
+    cars = db.relationship('Car')
 
-    def __init__(self, id, request):
-        self.id = id
+    def __init__(self, request):
         self.name = request['name']
         if 'fuel_price' in request:
             self.fuel_price = request['fuel_price']
-        if 'car_observers' in request:
-            self.car_observers = request['car_observers']
+        if 'cars' in request:
+            self.cars = request['cars']
 
-    def station_to_dict(self):
-        return {'id': self.id, 'name': self.name, 'fuel_price': self.fuel_price, 'car_observers': self.car_observers}
+    def to_dict(self):
+        return {'id': self.id, 'name': self.name, 'fuel_price': self.fuel_price, 'cars': [car.to_dict() for car in self.cars]}
 
     def set_station(self, request):
         if 'name' in request:
             self.name = request['name']
         if 'fuel_price' in request:
             self.fuel_price = request['fuel_price']
-        if 'car_observers' in request:
-            self.car_observers = request['car_observers']
+        if 'cars' in request:
+            for car in request['cars']:
+                new = Car(car)
+                self.cars.append(new)
 
-    def get_id(self):
-        return self.id
 
 
-class Car(Model):
+class Car(db.Model):
     __tablename__ = 'car'
-    id = Column(Integer, primary_key=True)
-    name = Column(String(50), nullable=False)
-    description = Column(String(100))
-    station_id = Column(Integer, ForeignKey('station.id'))
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    description = db.Column(db.String(100))
+    station_id = db.Column(db.Integer, db.ForeignKey('station.id'))
 
-    def __init__(self, id, request):
-        self.id = id
+    def __init__(self, request):
         self.name = request['name']
         if 'description' in request:
             self.description = request['description']
-        if 'station_id' in request:
-            self.station_id = request['station_id']
 
-    def car_to_dict(self):
+    def to_dict(self):
         return {'id': self.id, 'name': self.name, 'description': self.description, 'station_id': self.station_id}
 
     def set_car(self, request):
@@ -56,8 +60,3 @@ class Car(Model):
             self.name = request['name']
         if 'description' in request:
             self.description = request['description']
-        if 'station_id' in request:
-            self.station_id = request['station_id']
-
-    def get_id(self):
-        return self.id
