@@ -59,7 +59,7 @@ def create_station():
     station = GasStation(req)
     db.session.add(station)
     db.session.commit()
-    return jsonify(station.to_dict), 201
+    return jsonify(station.to_dict()), 201
 
 ########################### PUT ################################
 
