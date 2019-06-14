@@ -18,25 +18,21 @@ class GasStation(db.Model):
     fuel_price = db.Column(db.Integer)
     cars = db.relationship('Car')
 
-    def __init__(self, request):
+    def __init__(self, request, list_cars):
         self.name = request['name']
         if 'fuel_price' in request:
             self.fuel_price = request['fuel_price']
-        if 'cars' in request:
-            self.cars = request['cars']
+        self.cars = list_cars
 
     def to_dict(self):
         return {'id': self.id, 'name': self.name, 'fuel_price': self.fuel_price, 'cars': [car.to_dict() for car in self.cars]}
 
-    def set_station(self, request):
+    def set_station(self, request, list_cars):
         if 'name' in request:
             self.name = request['name']
         if 'fuel_price' in request:
             self.fuel_price = request['fuel_price']
-        if 'cars' in request:
-            for car in request['cars']:
-                new = Car(car)
-                self.cars.append(new)
+        self.cars = list_cars
 
 
 
@@ -60,3 +56,6 @@ class Car(db.Model):
             self.name = request['name']
         if 'description' in request:
             self.description = request['description']
+
+    def set_station_id(self, station_id):
+        self.station_id = station_id
